@@ -46,6 +46,75 @@ void write_str(int fd, const char *str) {
     write(fd, str, strlen(str));
 }
 
+// Function to return file path for storing treasure data
+char *get_treasure_file_path(const char *hunt_id) {
+    static char path[MAX_STRING];
+    snprintf(path, sizeof(path), "hunt/hunt%s/treasures.dat", hunt_id);
+    return path;
+}
+
+// Function to save hunt data using open() and write()
+void save_treasures(const char *hunt_id, Hunt *hunt) {
+    char *filepath = get_treasure_file_path(hunt_id);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) {
+        perror("Failed to open treasure data file");
+        return;
+    }
+
+    ssize_t total_size = sizeof(Hunt);
+    if (write(fd, hunt, total_size) != total_size) {
+        perror("Failed to write treasure data");
+        close(fd);
+        return;
+    }
+
+    close(fd);
+}
+
+
+// Function to load treasures from file using open() and read()
+Hunt *load_treasures(const char *hunt_id)
+{
+    static Hunt hunt;
+    strncpy(hunt.hunt_id, hunt_id, MAX_STRING - 1);
+    hunt.treasure_count = 0;
+
+    char *file_path = get_treasure_file_path(hunt_id);
+    int fd = open(file_path, O_RDONLY);
+    if (fd < 0)
+    {
+        // Return empty hunt if file doesn't exist
+        return &hunt;
+    }
+
+    if (read(fd, &hunt.treasure_count, sizeof(int)) != sizeof(int))
+    {
+        perror("Error reading treasure count");
+        close(fd);
+        return &hunt;
+    }
+
+    if (hunt.treasure_count < 0 || hunt.treasure_count > MAX_TREASURES)
+    {
+        fprintf(stderr, "Invalid treasure count in file\n");
+        hunt.treasure_count = 0;
+        close(fd);
+        return &hunt;
+    }
+
+    ssize_t expected_size = sizeof(Treasure) * hunt.treasure_count;
+    if (read(fd, hunt.treasures, expected_size) != expected_size)
+    {
+        perror("Error reading treasures");
+        hunt.treasure_count = 0;
+    }
+
+    close(fd);
+    return &hunt;
+}
+
+
 // Function to merge hunt logs into a single file
 void merge_hunt_logs()
 {
@@ -278,3 +347,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
