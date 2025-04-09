@@ -49,27 +49,22 @@ void write_str(int fd, const char *str) {
 // Function to merge hunt logs into a single file
 void merge_hunt_logs()
 {
-    FILE *output_file = open("hunt_log.txt", O_WRONLY | O_CREAT | O_APPEND, 0644); // Open in append mode
-    if (output_file == -1)
-    {
-        perror("Error opening hunt_log.txt");
-        return;
-    }
+  int output_fd = open("hunt_log.txt", O_WRONLY | O_CREAT | O_APPEND, 0644); // Open in append mode
+if (output_fd == -1)
+{
+    perror("Error opening hunt_log.txt");
+    return;
+}
 
     DIR *hunt_dir = opendir("hunt");
     if (hunt_dir == NULL)
     {
         perror("Error opening hunt directory");
-        close(output_file);
+        close(output_fd);
         return;
     }
 
     struct dirent *entry;
-    struct stat st;
-    char log_path[MAX_STRING];
-    char buffer[1024];
-
-       struct dirent *entry;
     struct stat st;
     char log_path[MAX_STRING];
     char buffer[1024];
@@ -145,7 +140,7 @@ void log_operation(const char *hunt_id, const char *operation, const char *detai
 
 // Function to add a new treasure
 void add_treasure(const char *hunt_id) {
-    create_hunt_directory(hunt_id);
+  mkdir(hunt_id,0755);
     Hunt *hunt = load_treasures(hunt_id);
 
     if (hunt->treasure_count >= MAX_TREASURES) {
@@ -154,7 +149,7 @@ void add_treasure(const char *hunt_id) {
     }
 
     Treasure *t = &hunt->treasures[hunt->treasure_count];
-    t->id = hunt->treasure_count + 1;
+    t->ID = hunt->treasure_count + 1;
 
     printf("Enter username: ");
     scanf("%s", t->username);
@@ -172,10 +167,10 @@ void add_treasure(const char *hunt_id) {
     save_treasures(hunt_id, hunt);
 
     char details[MAX_LOG_DETAILS];
-    sprintf(details, "Added treasure ID: %d, Username: %s, Value: %d", t->id, t->username, t->value);
+    sprintf(details, "Added treasure ID: %d, Username: %s, Value: %d", t->ID, t->username, t->value);
     log_operation(hunt_id, "ADD", details);
 
-    printf("Treasure added successfully with ID: %d\n", t->id);
+    printf("Treasure added successfully with ID: %d\n", t->ID);
 }
 
 // Function to list all treasures from a hunt
@@ -190,7 +185,7 @@ void list_treasures(const char *hunt_id) {
     for (int i = 0; i < hunt->treasure_count; ++i) {
         Treasure *t = &hunt->treasures[i];
         printf("ID: %d\nUsername: %s\nLocation: %.6f, %.6f\nClue: %s\nValue: %d\n\n",
-               t->id, t->username, t->latitude, t->longitude, t->clue, t->value);
+               t->ID, t->username, t->latitude, t->longitude, t->clue, t->value);
     }
 
     char details[MAX_LOG_DETAILS];
@@ -203,12 +198,12 @@ void view_treasure(const char *hunt_id, int id) {
     Hunt *hunt = load_treasures(hunt_id);
     for (int i = 0; i < hunt->treasure_count; ++i) {
         Treasure *t = &hunt->treasures[i];
-        if (t->id == id) {
+        if (t->ID == id) {
             printf("\nTreasure Details:\nID: %d\nUsername: %s\nLocation: %.6f, %.6f\nClue: %s\nValue: %d\n",
-                   t->id, t->username, t->latitude, t->longitude, t->clue, t->value);
+                   t->ID, t->username, t->latitude, t->longitude, t->clue, t->value);
 
             char details[MAX_LOG_DETAILS];
-            sprintf(details, "Viewed treasure ID: %d, Username: %s", t->id, t->username);
+            sprintf(details, "Viewed treasure ID: %d, Username: %s", t->ID, t->username);
             log_operation(hunt_id, "VIEW", details);
             return;
         }
@@ -221,7 +216,7 @@ void remove_treasure(const char *hunt_id, int treasure_id) {
     Hunt *hunt = load_treasures(hunt_id);
     int index = -1;
     for (int i = 0; i < hunt->treasure_count; i++) {
-        if (hunt->treasures[i].id == treasure_id) {
+        if (hunt->treasures[i].ID == treasure_id) {
             index = i;
             break;
         }
